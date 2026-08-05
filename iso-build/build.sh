@@ -118,8 +118,27 @@ if [ "${LB_STATUS}" -ne 0 ]; then
 fi
 
 # ─── 5. Locate & verify the ISO ─────────────────────────────────────────
-ISO_PATH="${WORK_DIR}/novauos-${VERSION}-${ARCH}.hybrid.iso"
-[ -f "${ISO_PATH}" ] || die "ISO not produced at ${ISO_PATH}"
+# live-build appends the architecture to --image-name, producing a name
+# like 'novauos-0.1.0-amd64-amd64.hybrid.iso' when our --image-name already
+# contains 'amd64'. We look for both the single-arch and double-arch names
+# so we don't fail on this cosmetic difference.
+CANDIDATE_NAMES=(
+    "${WORK_DIR}/novauos-${VERSION}-${ARCH}.hybrid.iso"
+    "${WORK_DIR}/novauos-${VERSION}-${ARCH}-${ARCH}.hybrid.iso"
+    "${WORK_DIR}/novauos-${VERSION}-${ARCH}.iso"
+    "${WORK_DIR}/novauos-${VERSION}-${ARCH}-${ARCH}.iso"
+)
+ISO_PATH=""
+for cand in "${CANDIDATE_NAMES[@]}"; do
+    if [ -f "${cand}" ]; then
+        ISO_PATH="${cand}"
+        break
+    fi
+done
+[ -n "${ISO_PATH}" ] || die "ISO not produced. Looked for: ${CANDIDATE_NAMES[*]}"
+
+log "✓ Found ISO at: ${ISO_PATH}"
+log "  size: $(du -h "${ISO_PATH}" | awk '{print $1}')"
 
 # Move to script dir so docker -v mount sees it
 mv "${ISO_PATH}" "${SCRIPT_DIR}/${ISO_NAME}"
