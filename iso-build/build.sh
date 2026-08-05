@@ -50,6 +50,21 @@ mkdir -p "${WORK_DIR}"
 cd "${WORK_DIR}"
 
 # Initialise live-build config
+#
+# Option reference (Debian 12 live-build 1:20230823):
+#   lb_config(1) — see `man lb_config` or
+#   https://manpages.debian.org/bookworm/live-build/lb_config.1.en.html
+#
+# Note: the option is `--uefi-secure-boot` (with a 'c'), NOT
+# `--uefi-security-boot`. We disable Secure Boot signing because we
+# don't ship a Microsoft-signed shim and don't want to require users
+# to disable Secure Boot manually — instead we ship unsigned EFI
+# GRUB and document that Secure Boot must be turned off in the BIOS.
+#
+# Note: it's `--binary-image` (singular), not `--binary-images`.
+#
+# `set -e` is already in effect; if lb config fails the script exits
+# immediately so CI shows a clear failure.
 lb config \
     --distribution bookworm \
     --architecture "${ARCH}" \
@@ -61,11 +76,13 @@ lb config \
     --iso-application "NovauOS ${VERSION}" \
     --image-name "novauos-${VERSION}-${ARCH}" \
     --memtest none \
-    --uefi-security-boot disabled \
+    --uefi-secure-boot disabled \
     --bootloaders grub-pc,grub-efi \
-    --binary-images iso-hybrid \
+    --binary-image iso-hybrid \
     --chroot-filesystem squashfs \
     --compression xz
+
+log "lb config completed successfully."
 
 # ─── 3. Copy our config overlays ────────────────────────────────────────
 log "Overlaying NovauOS live-build configuration…"
