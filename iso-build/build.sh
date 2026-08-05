@@ -107,7 +107,15 @@ rsync -a --exclude .git \
 
 # ─── 4. Run live-build ──────────────────────────────────────────────────
 log "Running live-build (this takes ~30–60 min on first run)…"
+# Use pipefail so a failure in `lb build` propagates through `tee`.
+set -o pipefail
 lb build 2>&1 | tee "${SCRIPT_DIR}/build.log"
+LB_STATUS=$?
+set +o pipefail
+
+if [ "${LB_STATUS}" -ne 0 ]; then
+    die "lb build failed with exit code ${LB_STATUS}. See ${SCRIPT_DIR}/build.log for details."
+fi
 
 # ─── 5. Locate & verify the ISO ─────────────────────────────────────────
 ISO_PATH="${WORK_DIR}/novauos-${VERSION}-${ARCH}.hybrid.iso"
