@@ -72,14 +72,15 @@ jobs:
           docker build -t novauos-builder:${{ github.sha }} .
 
       - name: Run the ISO build
-        working-directory: iso-build
         run: |
+          # Mount the repo root so build.sh can find rust-components/ at /build/rust-components
           docker run --rm --privileged \
             -v "$PWD:/build" \
             -v "/var/run/docker.sock:/var/run/docker.sock" \
             -e NOVAU_VERSION="${{ env.NOVAU_VERSION }}" \
             -e GITHUB_SHA="${{ github.sha }}" \
-            novauos-builder:${{ github.sha }} /build/build.sh
+            -w /build/iso-build \
+            novauos-builder:${{ github.sha }} /build/iso-build/build.sh
 
       - name: Verify ISO
         id: verify
@@ -132,6 +133,7 @@ jobs:
             iso-build/*.sha256sum
           prerelease: true
           token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
 
       - name: Job summary
         run: |

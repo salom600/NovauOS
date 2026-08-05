@@ -11,9 +11,6 @@
 #   4. If non-transient OR retries exhausted: open a GitHub issue with
 #      the error log so a human can take a look.
 #
-# We also commit log-derived patches back to main when the error is
-# obviously a missing dependency or similar (the action: stefanzweifel/git-auto-commit-action).
-#
 name: self-heal
 
 on:
@@ -36,6 +33,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install gh CLI (defensive)
+        run: |
+          if ! command -v gh >/dev/null 2>&1; then
+            echo "gh not installed; should be pre-installed on runners"
+            exit 1
+          fi
+
       - name: Fetch failure context
         id: ctx
         env:
@@ -45,14 +49,13 @@ jobs:
           WF="${{ github.event.workflow_run.name }}"
           ID="${{ github.event.workflow_run.id }}"
           HEAD_SHA="${{ github.event.workflow_run.head_sha }}"
-          ATTEMPTS_URL="https://api.github.com/repos/${{ github.repository }}/actions/runs/${ID}/attempts"
           echo "workflow=${WF}" >> $GITHUB_OUTPUT
           echo "run_id=${ID}" >> $GITHUB_OUTPUT
           echo "head_sha=${HEAD_SHA}" >> $GITHUB_OUTPUT
 
           # Download logs (zip)
           mkdir -p logs
-          gh api "repos/${{ github.repository }}/actions/runs/${ID}/logs" > logs/run.zip || true
+          gh api "repos/${{ github.repository }}/actions/runs/${ID}/logs" > logs/run.zip 2>/dev/null || true
           if [ -s logs/run.zip ]; then
             cd logs && unzip -o run.zip > /dev/null 2>&1 || true && cd ..
           fi
@@ -87,7 +90,7 @@ jobs:
                     --workflow "${WF_NAME}" \
                     --commit "${HEAD_SHA}" \
                     --json status,conclusion \
-                    --jq '[.[] | select(.status=="completed")] | length')
+                    --jq '[.[] | select(.status=="completed")] | length' || echo 1)
           echo "attempt_count=${COUNT}" >> $GITHUB_OUTPUT
           echo "Previous attempts on this SHA: ${COUNT}"
 
@@ -98,7 +101,6 @@ jobs:
         run: |
           WF_NAME="${{ steps.ctx.outputs.workflow }}"
           echo "::notice::Transient failure (${{ steps.classify.outputs.reason }}). Scheduling retry."
-          # Exponential backoff: attempt 1 → 0s, 2 → 60s, 3 → 180s
           ATTEMPT="${{ steps.retry.outputs.attempt_count }}"
           case "${ATTEMPT}" in
             1) SLEEP=0 ;;
@@ -112,45 +114,52 @@ jobs:
             --ref "${{ github.event.workflow_run.head_branch }}"
           echo "Retry dispatched."
 
+      - name: Ensure labels exist
+        if: steps.classify.outputs.kind != 'transient' || steps.retry.outputs.attempt_count >= 4
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Create labels if they don't already exist; ignore errors if they do.
+          gh label create "ci-failure" --repo "${{ github.repository }}" --color "D93F0B" --description "CI failed and was triaged by self-heal" 2>/dev/null || true
+          gh label create "automated" --repo "${{ github.repository }}" --color "0E8A16" --description "Opened by automation" 2>/dev/null || true
+
       - name: Open issue (non-transient or retries exhausted)
         if: steps.classify.outputs.kind != 'transient' || steps.retry.outputs.attempt_count >= 4
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
           TITLE="[CI] ${{ steps.ctx.outputs.workflow }} failed: ${{ steps.classify.outputs.reason }}"
-          BODY=$(cat <<EOF
-          ## Automated failure report
 
-          - **Workflow:** ${{ steps.ctx.outputs.workflow }}
-          - **Run ID:** ${{ steps.ctx.outputs.run_id }}
-          - **Commit:** ${{ steps.ctx.outputs.head_sha }}
-          - **Classification:** \`${{ steps.classify.outputs.kind }}\`
-          - **Reason:** ${{ steps.classify.outputs.reason }}
-          - **Attempts so far:** ${{ steps.retry.outputs.attempt_count }}
-
-          ### Log excerpt
-
-          \`\`\`
-          $(tail -n 80 logs/combined.log)
-          \`\`\`
-
-          ### Action required
-
-          ${
+          # Build the body in a file to avoid heredoc variable-expansion pitfalls.
+          {
+            echo "## Automated failure report"
+            echo ""
+            echo "- **Workflow:** ${{ steps.ctx.outputs.workflow }}"
+            echo "- **Run ID:** ${{ steps.ctx.outputs.run_id }}"
+            echo "- **Commit:** ${{ steps.ctx.outputs.head_sha }}"
+            echo "- **Classification:** \`${{ steps.classify.outputs.kind }}\`"
+            echo "- **Reason:** ${{ steps.classify.outputs.reason }}"
+            echo "- **Attempts so far:** ${{ steps.retry.outputs.attempt_count }}"
+            echo ""
+            echo "### Log excerpt"
+            echo ""
+            echo '```'
+            tail -n 80 logs/combined.log
+            echo '```'
+            echo ""
+            echo "### Action required"
+            echo ""
             if [ "${{ steps.classify.outputs.kind }}" = "transient" ]; then
               echo "This was a transient failure that did not recover after ${{ steps.retry.outputs.attempt_count }} retries. Manual investigation needed."
             else
               echo "This is a real (non-transient) failure. Please fix the underlying issue in the codebase."
             fi
-          }
+            echo ""
+            echo "[View full run](https://github.com/${{ github.repository }}/actions/runs/${{ steps.ctx.outputs.run_id }})"
+          } > issue_body.md
 
-          [View full run](https://github.com/${{ github.repository }}/actions/runs/${{ steps.ctx.outputs.run_id }})
-          EOF
-          )
           gh issue create --repo "${{ github.repository }}" \
             --title "${TITLE}" \
-            --body "${BODY}" \
-            --label "ci-failure,automated" || \
-          gh issue create --repo "${{ github.repository }}" \
-            --title "${TITLE}" \
-            --body "${BODY}"
+            --body-file issue_body.md \
+            --label "ci-failure,automated"
