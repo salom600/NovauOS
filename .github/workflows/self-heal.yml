@@ -20,7 +20,7 @@ on:
       - completed
 
 permissions:
-  actions: read
+  actions: write     # needed to dispatch workflow retries via `gh workflow run`
   contents: write
   issues: write
   pull-requests: write

@@ -35,31 +35,31 @@ TRANSIENT_PATTERNS=(
     'The repository.*is not signed'
     'GPG error.*NO_PUBKEY'
 
-    # cargo / crates.io
+    # cargo / crates.io — be careful: do NOT match the crates.io URL hash
+    # (e.g. "crates.io-1949cf8c6b5b557") which appears in path strings
+    # and contains digits that look like HTTP 5xx codes.
     'error: failed to download.*crates\.io'
-    'error: could not find.*crate'
+    'error: could not download crate'
     'warning: spurious network error'
     'Blocking waiting for file lock'
-    'error: network error'
-    'crates\.io.*5[0-9][0-9]'
+    'error: network error.*registry'
+    'failed to get crates\.io index'
+    'error: received 5[0-9][0-9] from crates\.io'
 
     # Docker
     'toomanyrequests: Rate exceeded'
     'net/http: TLS handshake timeout'
     'dial tcp: lookup.*: no such host'
-    'EOF.*docker'
     'Cannot connect to the Docker daemon'
 
-    # GitHub API
-    'HTTP 5[0-9][0-9]:'
+    # GitHub API — match actual HTTP lines, not bare 5xx in hashes
+    'HTTP 5[0-9][0-9]:'                # require a colon to anchor to an HTTP status line
     'API rate limit exceeded'
-    'Bad credentials'  # token blip
 
-    # Generic
+    # Generic network
     'Connection timed out'
     'Connection reset by peer'
     'Operation timed out'
-    'No space left on device'  # this one we still want to retry; CI runner may have transient disk pressure
 )
 
 # ── Real (non-transient) patterns ─────────────────────────────────────

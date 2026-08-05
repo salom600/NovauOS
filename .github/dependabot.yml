@@ -1,6 +1,7 @@
 version: 2
 updates:
-  # Rust dependencies
+  # Rust dependencies — limit to minor and patch to avoid major API breaks
+  # that would require code changes. Major bumps go through manual review.
   - package-ecosystem: "cargo"
     directory: "/rust-components"
     schedule:
@@ -8,15 +9,29 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "UTC"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
     labels:
       - "dependencies"
       - "rust"
     commit-message:
       prefix: "build(deps)"
       include: "scope"
+    # Reject major version bumps (e.g. iced 0.12 → 0.13, zbus 4 → 5).
+    # They almost always require code changes; we'll do them manually.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+      # Also ignore 0.x → 0.y jumps (Rust's pre-1.0 "major" bumps)
+      - dependency-name: "iced"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "zbus"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "rusqlite"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "winit"
+        update-types: ["version-update:semver-minor"]
 
-  # GitHub Actions
+  # GitHub Actions — allow minor and patch
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -28,7 +43,7 @@ updates:
       prefix: "ci(deps)"
       include: "scope"
 
-  # Docker base images
+  # Docker base images — allow minor and patch
   - package-ecosystem: "docker"
     directory: "/iso-build"
     schedule:
