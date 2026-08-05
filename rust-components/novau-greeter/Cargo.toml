@@ -27,7 +27,7 @@ novau-ipc.workspace = true
 # PAM: we link directly against libpam via our own minimal FFI (see `auth.rs`).
 # This avoids the heavyweight `bindgen`+`libclang` toolchain the `pam` crate
 # pulls in, keeping the build hermetic.
-nix = { version = "0.27", features = ["user"] }
+nix = { version = "0.29", features = ["user"] }
 libc = "0.2"
 
 [dev-dependencies]
