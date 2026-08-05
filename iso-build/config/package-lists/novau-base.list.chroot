@@ -201,7 +201,12 @@ winetricks
 fonts-wine
 
 # ── Proton / Steam for gaming ──
-steam-installer
+# NOTE: steam-installer from apt depends on steam-libs-i386, which
+# requires `dpkg --add-architecture i386` + the lib32 multiarch packages
+# (~500 MB). Rather than bloating the ISO with 32-bit libraries that
+# most users won't need, we ship Steam as a Flatpak (which bundles its
+# own 32-bit runtime in a sandbox). Users install it via novau-store.
+# Proton ships inside the Steam Flatpak automatically.
 gamescope
 mangohud
 gamemode
