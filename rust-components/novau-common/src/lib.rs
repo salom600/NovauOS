@@ -63,13 +63,17 @@ pub mod paths {
             if let Ok(x) = std::env::var("XDG_RUNTIME_DIR") {
                 PathBuf::from(x).join("novau")
             } else {
-                PathBuf::from("/run/user").join(format!("{}", unsafe { libc::getuid() })).join("novau")
+                PathBuf::from("/run/user")
+                    .join(format!("{}", unsafe { libc::getuid() }))
+                    .join("novau")
             }
         })
     }
 
     fn dirs_home() -> PathBuf {
-        std::env::var("HOME").map(PathBuf::from).unwrap_or_else(|_| PathBuf::from("/"))
+        std::env::var("HOME")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| PathBuf::from("/"))
     }
 }
 
@@ -97,7 +101,10 @@ pub enum Compositor {
 
 impl Compositor {
     pub fn detect() -> Self {
-        match std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default().as_str() {
+        match std::env::var("XDG_CURRENT_DESKTOP")
+            .unwrap_or_default()
+            .as_str()
+        {
             "sway" => Self::Sway,
             "cosmic" => Self::CosmicComp,
             "wayfire" => Self::Wayfire,
@@ -135,20 +142,12 @@ pub type Result<T, E = NovauError> = std::result::Result<T, E>;
 /// Initialize logging for any novau binary.
 pub fn init_logging(component: &str) {
     let component = component.to_string();
-    let _ = env_logger::Builder::from_env(
-        env_logger::Env::default().default_filter_or("info")
-    )
-    .format_timestamp_secs()
-    .format_target(false)
-    .format(move |buf, record| {
-        use std::io::Write;
-        writeln!(
-            buf,
-            "[{} {}] {}",
-            component,
-            record.level(),
-            record.args()
-        )
-    })
-    .try_init();
+    let _ = env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+        .format_timestamp_secs()
+        .format_target(false)
+        .format(move |buf, record| {
+            use std::io::Write;
+            writeln!(buf, "[{} {}] {}", component, record.level(), record.args())
+        })
+        .try_init();
 }

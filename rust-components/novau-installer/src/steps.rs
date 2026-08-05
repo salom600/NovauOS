@@ -121,20 +121,34 @@ pub fn view(s: &InstallerState) -> Element<Message> {
 
     let mut nav = row![];
     if s.step != Step::Welcome && s.step != Step::Install && s.step != Step::Done {
-        nav = nav.push(button("Back").on_press(Message::Back).width(Length::Fixed(140.0)));
+        nav = nav.push(
+            button("Back")
+                .on_press(Message::Back)
+                .width(Length::Fixed(140.0)),
+        );
     }
     match s.step {
         Step::Welcome | Step::Locale | Step::Disk | Step::User => {
-            nav = nav.push(button("Next").on_press(Message::Next).width(Length::Fixed(140.0)));
+            nav = nav.push(
+                button("Next")
+                    .on_press(Message::Next)
+                    .width(Length::Fixed(140.0)),
+            );
         }
         Step::Summary => {
-            nav = nav.push(button("Install").on_press(Message::Next).width(Length::Fixed(160.0))
-                .style(iced::theme::Button::Primary));
+            nav = nav.push(
+                button("Install")
+                    .on_press(Message::Next)
+                    .width(Length::Fixed(160.0))
+                    .style(iced::theme::Button::Primary),
+            );
         }
         _ => {}
     }
 
-    let col = column![title, body, nav].spacing(24).align_items(Alignment::Center);
+    let col = column![title, body, nav]
+        .spacing(24)
+        .align_items(Alignment::Center);
     container(col)
         .width(Length::Fill)
         .height(Length::Fill)
@@ -150,7 +164,11 @@ fn enumerate_disks() -> Vec<String> {
         for e in rd.flatten() {
             let name = e.file_name().to_string_lossy().into_owned();
             // Filter out loop/ram devices; keep nvme, sd, vd, mmcblk
-            if name.starts_with("sd") || name.starts_with("nvme") || name.starts_with("vd") || name.starts_with("mmcblk") {
+            if name.starts_with("sd")
+                || name.starts_with("nvme")
+                || name.starts_with("vd")
+                || name.starts_with("mmcblk")
+            {
                 out.push(format!("/dev/{name}"));
             }
         }

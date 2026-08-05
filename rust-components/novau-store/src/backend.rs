@@ -16,7 +16,12 @@ pub struct Package {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Kind { Apt, Flatpak, Wine, AppImage }
+pub enum Kind {
+    Apt,
+    Flatpak,
+    Wine,
+    AppImage,
+}
 
 impl Kind {
     pub fn as_str(&self) -> &'static str {
@@ -34,7 +39,9 @@ pub struct Backend {
 }
 
 impl Backend {
-    pub fn new(cache: Cache) -> Self { Self { cache } }
+    pub fn new(cache: Cache) -> Self {
+        Self { cache }
+    }
 
     pub async fn search(&self, query: &str) -> Result<Vec<Package>> {
         let mut out = Vec::new();
@@ -46,8 +53,10 @@ impl Backend {
 
     async fn search_apt(&self, q: &str) -> Result<Vec<Package>> {
         let out = tokio::process::Command::new("apt-cache")
-            .arg("search").arg(q)
-            .output().await?;
+            .arg("search")
+            .arg(q)
+            .output()
+            .await?;
         let txt = String::from_utf8_lossy(&out.stdout);
         let mut pkgs = Vec::new();
         for line in txt.lines().take(50) {
@@ -68,11 +77,18 @@ impl Backend {
 
     async fn search_flatpak(&self, q: &str) -> Result<Vec<Package>> {
         let out = tokio::process::Command::new("flatpak")
-            .arg("search").arg("--columns=application,description")
+            .arg("search")
+            .arg("--columns=application,description")
             .arg(q)
-            .output().await;
-        let out = match out { Ok(o) => o, Err(_) => return Ok(Vec::new()) };
-        if !out.status.success() { return Ok(Vec::new()); }
+            .output()
+            .await;
+        let out = match out {
+            Ok(o) => o,
+            Err(_) => return Ok(Vec::new()),
+        };
+        if !out.status.success() {
+            return Ok(Vec::new());
+        }
         let txt = String::from_utf8_lossy(&out.stdout);
         let mut pkgs = Vec::new();
         for line in txt.lines().skip(1) {
@@ -100,16 +116,29 @@ impl Backend {
             if let Ok(json) = resp.json::<serde_json::Value>().await {
                 let mut pkgs = Vec::new();
                 if let Some(items) = json.get("items").and_then(|v| v.as_array()) {
-                    for item in items.iter().filter(|i| {
-                        i.get("name").and_then(|s| s.as_str())
-                            .map(|s| s.to_lowercase().contains(&q.to_lowercase()))
-                            .unwrap_or(false)
-                    }).take(20) {
-                        let name = item.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                    for item in items
+                        .iter()
+                        .filter(|i| {
+                            i.get("name")
+                                .and_then(|s| s.as_str())
+                                .map(|s| s.to_lowercase().contains(&q.to_lowercase()))
+                                .unwrap_or(false)
+                        })
+                        .take(20)
+                    {
+                        let name = item
+                            .get("name")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("")
+                            .to_string();
                         pkgs.push(Package {
                             id: name.clone(),
                             name: name.clone(),
-                            summary: item.get("abstract").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                            summary: item
+                                .get("abstract")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("")
+                                .to_string(),
                             kind: Kind::AppImage,
                             icon: None,
                             rating: 0.0,
@@ -127,15 +156,27 @@ impl Backend {
         match pkg.kind {
             Kind::Apt => {
                 let s = tokio::process::Command::new("pkexec")
-                    .arg("apt-get").arg("install").arg("-y").arg(&pkg.id)
-                    .status().await?;
-                if !s.success() { return Err(anyhow::anyhow!("apt install failed")); }
+                    .arg("apt-get")
+                    .arg("install")
+                    .arg("-y")
+                    .arg(&pkg.id)
+                    .status()
+                    .await?;
+                if !s.success() {
+                    return Err(anyhow::anyhow!("apt install failed"));
+                }
             }
             Kind::Flatpak => {
                 let s = tokio::process::Command::new("flatpak")
-                    .arg("install").arg("-y").arg("flathub").arg(&pkg.id)
-                    .status().await?;
-                if !s.success() { return Err(anyhow::anyhow!("flatpak install failed")); }
+                    .arg("install")
+                    .arg("-y")
+                    .arg("flathub")
+                    .arg(&pkg.id)
+                    .status()
+                    .await?;
+                if !s.success() {
+                    return Err(anyhow::anyhow!("flatpak install failed"));
+                }
             }
             Kind::Wine => {
                 // Wine runner install handled by proton-ge integration
@@ -145,8 +186,11 @@ impl Backend {
                 let s = tokio::process::Command::new("sh")
                     .arg("-c")
                     .arg(format!("appimage-install {}", pkg.id))
-                    .status().await?;
-                if !s.success() { return Err(anyhow::anyhow!("AppImage install failed")); }
+                    .status()
+                    .await?;
+                if !s.success() {
+                    return Err(anyhow::anyhow!("AppImage install failed"));
+                }
             }
         }
         Ok(())

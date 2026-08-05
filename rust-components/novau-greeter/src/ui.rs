@@ -84,7 +84,9 @@ impl Application for Greeter {
                 self.selected_user = Some(i);
                 self.password.clear();
                 self.error = None;
-                self.selected_session = self.sessions.iter()
+                self.selected_session = self
+                    .sessions
+                    .iter()
                     .find(|s| s.id == "novau")
                     .or_else(|| self.sessions.first())
                     .cloned();
@@ -134,11 +136,9 @@ impl Application for Greeter {
     }
 
     fn view(&self) -> Element<Message> {
-        let title = text(format!("{}", novau_common::DISTRO_NAME))
-            .size(48);
+        let title = text(format!("{}", novau_common::DISTRO_NAME)).size(48);
 
-        let subtitle = text("Sign in")
-            .size(20);
+        let subtitle = text("Sign in").size(20);
 
         let body: Element<Message> = if let Some(i) = self.selected_user {
             self.password_view(i)
@@ -150,8 +150,12 @@ impl Application for Greeter {
             title,
             subtitle,
             body,
-            text(format!("v{} — {}", novau_common::DISTRO_VERSION, novau_common::DISTRO_CODENAME))
-                .size(12),
+            text(format!(
+                "v{} — {}",
+                novau_common::DISTRO_VERSION,
+                novau_common::DISTRO_CODENAME
+            ))
+            .size(12),
         ]
         .spacing(20)
         .align_items(Alignment::Center);
@@ -164,7 +168,9 @@ impl Application for Greeter {
             .into()
     }
 
-    fn theme(&self) -> Theme { Theme::Dark }
+    fn theme(&self) -> Theme {
+        Theme::Dark
+    }
 }
 
 impl Greeter {
@@ -204,22 +210,23 @@ impl Greeter {
             row![
                 button("Cancel").width(Length::Fixed(140.0)),
                 button("Signing in…").width(Length::Fixed(160.0)),
-            ].spacing(12)
+            ]
+            .spacing(12)
         } else {
             row![
-                button("Cancel").on_press(Message::Cancel).width(Length::Fixed(140.0)),
-                button("Sign in").on_press(Message::LoginPressed).width(Length::Fixed(160.0)),
-            ].spacing(12)
+                button("Cancel")
+                    .on_press(Message::Cancel)
+                    .width(Length::Fixed(140.0)),
+                button("Sign in")
+                    .on_press(Message::LoginPressed)
+                    .width(Length::Fixed(160.0)),
+            ]
+            .spacing(12)
         };
 
-        let mut col = column![
-            text(name).size(28),
-            pw_input,
-            session_picker,
-            btns,
-        ]
-        .spacing(14)
-        .align_items(Alignment::Center);
+        let mut col = column![text(name).size(28), pw_input, session_picker, btns,]
+            .spacing(14)
+            .align_items(Alignment::Center);
 
         if let Some(e) = &self.error {
             col = col.push(text(e));
@@ -234,7 +241,9 @@ fn self_uid(user: &str) -> u32 {
         for line in txt.lines() {
             let f: Vec<&str> = line.split(':').collect();
             if f.len() > 2 && f[0] == user {
-                if let Ok(u) = f[2].parse() { return u; }
+                if let Ok(u) = f[2].parse() {
+                    return u;
+                }
             }
         }
     }

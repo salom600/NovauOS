@@ -8,17 +8,27 @@ pub fn enumerate() -> Result<Vec<SystemUser>> {
     let mut out = Vec::new();
     for line in std::fs::read_to_string("/etc/passwd")?.lines() {
         let fields: Vec<&str> = line.split(':').collect();
-        if fields.len() < 7 { continue; }
+        if fields.len() < 7 {
+            continue;
+        }
         let name = fields[0].to_string();
-        let uid: u32 = match fields[2].parse() { Ok(u) => u, Err(_) => continue };
+        let uid: u32 = match fields[2].parse() {
+            Ok(u) => u,
+            Err(_) => continue,
+        };
         // Skip system accounts
-        if uid < 1000 || uid == 65534 { continue; }
+        if uid < 1000 || uid == 65534 {
+            continue;
+        }
         // Skip nologin / false shells
         let shell = PathBuf::from(fields[6]);
         if let Some(f) = shell.file_name().and_then(|s| s.to_str()) {
-            if matches!(f, "nologin" | "false") { continue; }
+            if matches!(f, "nologin" | "false") {
+                continue;
+            }
         }
-        let real_name = fields[4].split(',')
+        let real_name = fields[4]
+            .split(',')
             .next()
             .filter(|s| !s.is_empty())
             .map(String::from);
@@ -38,5 +48,9 @@ pub fn enumerate() -> Result<Vec<SystemUser>> {
 
 fn avatar_for(user: &str) -> Option<PathBuf> {
     let p = PathBuf::from("/var/lib/AccountsService/icons").join(user);
-    if p.exists() { Some(p) } else { None }
+    if p.exists() {
+        Some(p)
+    } else {
+        None
+    }
 }

@@ -10,9 +10,9 @@
 //! transient toast on the right.
 
 mod clock;
+mod notifications;
 mod tray;
 mod windows;
-mod notifications;
 
 use anyhow::Result;
 use iced::{Application, Command, Settings};
@@ -80,7 +80,9 @@ impl Application for Panel {
         (Self { state }, cmd)
     }
 
-    fn title(&self) -> String { "Novau Panel".into() }
+    fn title(&self) -> String {
+        "Novau Panel".into()
+    }
 
     fn update(&mut self, msg: Message) -> Command<Message> {
         match msg {
@@ -88,11 +90,18 @@ impl Application for Panel {
             Message::ToggleLauncher => {
                 // Send an IPC message to the launcher
                 let _ = std::os::unix::net::UnixStream::connect(
-                    novau_common::paths::runtime().join("launcher.sock"));
+                    novau_common::paths::runtime().join("launcher.sock"),
+                );
                 Command::none()
             }
-            Message::ClockTick(t) => { self.state.clock = Some(t); Command::none() }
-            Message::WindowList(w) => { self.state.windows = w; Command::none() }
+            Message::ClockTick(t) => {
+                self.state.clock = Some(t);
+                Command::none()
+            }
+            Message::WindowList(w) => {
+                self.state.windows = w;
+                Command::none()
+            }
             Message::Notification(n) => {
                 self.state.notifications.push(n);
                 // Auto-dismiss after 5s
@@ -107,8 +116,14 @@ impl Application for Panel {
                 }
                 Command::none()
             }
-            Message::SetVolume(v) => { self.state.volume = v; Command::none() }
-            Message::ToggleMute => { self.state.muted = !self.state.muted; Command::none() }
+            Message::SetVolume(v) => {
+                self.state.volume = v;
+                Command::none()
+            }
+            Message::ToggleMute => {
+                self.state.muted = !self.state.muted;
+                Command::none()
+            }
         }
     }
 
@@ -116,9 +131,13 @@ impl Application for Panel {
         use iced::widget::{button, column, container, row, text};
         use iced::{Alignment, Color, Length};
 
-        let logo = button(text("❖").size(20).style(iced::theme::Text::Color(Color::from_rgb(0.43, 0.84, 0.64))))
-            .on_press(Message::ToggleLauncher)
-            .padding(4);
+        let logo = button(
+            text("❖")
+                .size(20)
+                .style(iced::theme::Text::Color(Color::from_rgb(0.43, 0.84, 0.64))),
+        )
+        .on_press(Message::ToggleLauncher)
+        .padding(4);
 
         let wins: iced::Element<_> = if self.state.windows.is_empty() {
             text("").into()
@@ -136,7 +155,9 @@ impl Application for Panel {
             r.into()
         };
 
-        let clock_text = self.state.clock
+        let clock_text = self
+            .state
+            .clock
             .map(|t| t.format("%a %H:%M").to_string())
             .unwrap_or_default();
         let clock = text(clock_text).size(15);
@@ -151,13 +172,18 @@ impl Application for Panel {
             notif_col = notif_col.push(
                 iced::widget::container(
                     column![
-                        text(format!("{}", n.app)).size(12).style(iced::theme::Text::Color(Color::from_rgb(0.7, 0.85, 0.7))),
+                        text(format!("{}", n.app))
+                            .size(12)
+                            .style(iced::theme::Text::Color(Color::from_rgb(0.7, 0.85, 0.7))),
                         text(&n.summary).size(13),
-                        text(&n.body).size(12).style(iced::theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
-                    ].spacing(2)
+                        text(&n.body)
+                            .size(12)
+                            .style(iced::theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
+                    ]
+                    .spacing(2),
                 )
                 .padding(8)
-                .style(iced::theme::Container::Box)
+                .style(iced::theme::Container::Box),
             );
         }
 

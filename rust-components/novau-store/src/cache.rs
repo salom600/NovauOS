@@ -13,7 +13,8 @@ impl Cache {
         let path = novau_common::paths::cache().join("store.db");
         novau_common::ensure_dir(&path.parent().unwrap())?;
         let conn = Connection::open(&path)?;
-        conn.execute_batch(r#"
+        conn.execute_batch(
+            r#"
             CREATE TABLE IF NOT EXISTS packages (
                 id        TEXT NOT NULL,
                 kind      TEXT NOT NULL,
@@ -26,7 +27,10 @@ impl Cache {
                 PRIMARY KEY (id, kind)
             );
             CREATE INDEX IF NOT EXISTS idx_packages_name ON packages(name);
-        "#)?;
-        Ok(Self { conn: Mutex::new(conn) })
+        "#,
+        )?;
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 }

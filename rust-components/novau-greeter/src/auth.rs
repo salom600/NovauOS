@@ -17,7 +17,9 @@ const PAM_TEXT_INFO: c_int = 4;
 
 // ── Opaque types ────────────────────────────────────────────────────────
 #[repr(C)]
-struct PamHandle { _private: [u8; 0] }
+struct PamHandle {
+    _private: [u8; 0],
+}
 
 #[repr(C)]
 struct PamMessage {
@@ -33,12 +35,14 @@ struct PamResponse {
 
 #[repr(C)]
 struct PamConv {
-    conv: Option<unsafe extern "C" fn(
-        num_msg: c_int,
-        msgm: *const *const PamMessage,
-        response: *mut *mut PamResponse,
-        appdata_ptr: *mut c_void,
-    ) -> c_int>,
+    conv: Option<
+        unsafe extern "C" fn(
+            num_msg: c_int,
+            msgm: *const *const PamMessage,
+            response: *mut *mut PamResponse,
+            appdata_ptr: *mut c_void,
+        ) -> c_int,
+    >,
     appdata_ptr: *mut c_void,
 }
 
@@ -90,7 +94,9 @@ pub fn authenticate(username: &str, password: &str) -> Result<()> {
     if !auth_ok {
         let msg = unsafe {
             let p = pam_strerror(pamh, r);
-            if p.is_null() { format!("PAM error {r}") } else {
+            if p.is_null() {
+                format!("PAM error {r}")
+            } else {
                 CStr::from_ptr(p).to_string_lossy().into_owned()
             }
         };
@@ -125,7 +131,9 @@ unsafe extern "C" fn conv_cb(
 
     for i in 0..count {
         let m_ptr = *msgm.add(i);
-        if m_ptr.is_null() { continue; }
+        if m_ptr.is_null() {
+            continue;
+        }
         let m = &*m_ptr;
         match m.msg_style {
             PAM_PROMPT_ECHO_OFF | PAM_PROMPT_ECHO_ON => {
@@ -161,7 +169,10 @@ impl PamSession {
         let user = CString::new(username).map_err(|e| anyhow!("username: {e}"))?;
         let pw_box = Box::new(password.to_string());
         let appdata = &*pw_box as *const String as *mut c_void;
-        let conv = PamConv { conv: Some(conv_cb), appdata_ptr: appdata };
+        let conv = PamConv {
+            conv: Some(conv_cb),
+            appdata_ptr: appdata,
+        };
 
         let mut pamh: *mut PamHandle = ptr::null_mut();
         let r = unsafe { pam_start(svc.as_ptr(), user.as_ptr(), &conv, &mut pamh) };

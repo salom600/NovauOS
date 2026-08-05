@@ -15,7 +15,10 @@ fn main() -> Result<()> {
     log::info!("starting novau-settings");
 
     let cfg = config::Settings::load()?;
-    SettingsApp::run(Settings::with_flags(SettingsState { cfg, active: panes::Pane::Display }))?;
+    SettingsApp::run(Settings::with_flags(SettingsState {
+        cfg,
+        active: panes::Pane::Display,
+    }))?;
     Ok(())
 }
 
@@ -48,15 +51,32 @@ impl Application for SettingsApp {
         (Self { state }, Command::none())
     }
 
-    fn title(&self) -> String { "Novau Settings".into() }
+    fn title(&self) -> String {
+        "Novau Settings".into()
+    }
 
     fn update(&mut self, msg: Message) -> Command<Message> {
         match msg {
-            Message::Switch(p) => { self.state.active = p; Command::none() }
-            Message::SetWallpaper(p) => { self.state.cfg.appearance.wallpaper = p; Command::none() }
-            Message::SetDark(d) => { self.state.cfg.appearance.dark = d; Command::none() }
-            Message::SetVolume(v) => { self.state.cfg.sound.volume = v; Command::none() }
-            Message::SetBrightness(v) => { self.state.cfg.display.brightness = v; Command::none() }
+            Message::Switch(p) => {
+                self.state.active = p;
+                Command::none()
+            }
+            Message::SetWallpaper(p) => {
+                self.state.cfg.appearance.wallpaper = p;
+                Command::none()
+            }
+            Message::SetDark(d) => {
+                self.state.cfg.appearance.dark = d;
+                Command::none()
+            }
+            Message::SetVolume(v) => {
+                self.state.cfg.sound.volume = v;
+                Command::none()
+            }
+            Message::SetBrightness(v) => {
+                self.state.cfg.display.brightness = v;
+                Command::none()
+            }
             Message::Save => {
                 if let Err(e) = self.state.cfg.save() {
                     log::error!("save settings: {e}");
@@ -75,7 +95,11 @@ impl Application for SettingsApp {
             let b = button(text(pane.title()).size(15))
                 .width(Length::Fill)
                 .on_press(Message::Switch(*pane))
-                .style(if self.state.active == *pane { iced::theme::Button::Primary } else { iced::theme::Button::Secondary });
+                .style(if self.state.active == *pane {
+                    iced::theme::Button::Primary
+                } else {
+                    iced::theme::Button::Secondary
+                });
             sidebar = sidebar.push(b);
         }
         sidebar = sidebar.push(button("Save").on_press(Message::Save).width(Length::Fill));

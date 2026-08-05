@@ -62,10 +62,41 @@ impl Default for Appearance {
         }
     }
 }
-impl Default for Display { fn default() -> Self { Self { scaling: 1.0, brightness: 80, night_light: false } } }
-impl Default for Sound { fn default() -> Self { Self { volume: 50, muted: false, output: "auto".into() } } }
-impl Default for Power { fn default() -> Self { Self { idle_dim_seconds: 120, sleep_seconds: 600 } } }
-impl Default for Network { fn default() -> Self { Self { wifi_enabled: true, bluetooth_enabled: false, airplane_mode: false } } }
+impl Default for Display {
+    fn default() -> Self {
+        Self {
+            scaling: 1.0,
+            brightness: 80,
+            night_light: false,
+        }
+    }
+}
+impl Default for Sound {
+    fn default() -> Self {
+        Self {
+            volume: 50,
+            muted: false,
+            output: "auto".into(),
+        }
+    }
+}
+impl Default for Power {
+    fn default() -> Self {
+        Self {
+            idle_dim_seconds: 120,
+            sleep_seconds: 600,
+        }
+    }
+}
+impl Default for Network {
+    fn default() -> Self {
+        Self {
+            wifi_enabled: true,
+            bluetooth_enabled: false,
+            airplane_mode: false,
+        }
+    }
+}
 
 impl Settings {
     pub fn load() -> Result<Self> {

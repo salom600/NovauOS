@@ -90,26 +90,61 @@ impl Application for Installer {
         (Self { state }, Command::none())
     }
 
-    fn title(&self) -> String { "NovauOS Installer".into() }
+    fn title(&self) -> String {
+        "NovauOS Installer".into()
+    }
 
     fn update(&mut self, msg: Message) -> Command<Message> {
         match msg {
-            Message::Next => { self.state.step = self.state.step.next(); Command::none() }
-            Message::Back => { self.state.step = self.state.step.prev(); Command::none() }
-            Message::SetLanguage(v) => { self.state.language = v; Command::none() }
-            Message::SetTimezone(v) => { self.state.timezone = v; Command::none() }
-            Message::SetDisk(v) => { self.state.disk = Some(v); Command::none() }
-            Message::SetUserName(v) => { self.state.user_name = v; Command::none() }
-            Message::SetUserFull(v) => { self.state.user_full = v; Command::none() }
-            Message::SetUserPass(v) => { self.state.user_pass = v; Command::none() }
-            Message::SetHostname(v) => { self.state.hostname = v; Command::none() }
+            Message::Next => {
+                self.state.step = self.state.step.next();
+                Command::none()
+            }
+            Message::Back => {
+                self.state.step = self.state.step.prev();
+                Command::none()
+            }
+            Message::SetLanguage(v) => {
+                self.state.language = v;
+                Command::none()
+            }
+            Message::SetTimezone(v) => {
+                self.state.timezone = v;
+                Command::none()
+            }
+            Message::SetDisk(v) => {
+                self.state.disk = Some(v);
+                Command::none()
+            }
+            Message::SetUserName(v) => {
+                self.state.user_name = v;
+                Command::none()
+            }
+            Message::SetUserFull(v) => {
+                self.state.user_full = v;
+                Command::none()
+            }
+            Message::SetUserPass(v) => {
+                self.state.user_pass = v;
+                Command::none()
+            }
+            Message::SetHostname(v) => {
+                self.state.hostname = v;
+                Command::none()
+            }
             Message::InstallProgress(p, line) => {
                 self.state.progress = p;
                 self.state.log.push(line);
                 Command::none()
             }
-            Message::InstallDone => { self.state.step = steps::Step::Done; Command::none() }
-            Message::InstallFailed(e) => { self.state.error = Some(e); Command::none() }
+            Message::InstallDone => {
+                self.state.step = steps::Step::Done;
+                Command::none()
+            }
+            Message::InstallFailed(e) => {
+                self.state.error = Some(e);
+                Command::none()
+            }
             Message::Quit => std::process::exit(0),
         }
     }

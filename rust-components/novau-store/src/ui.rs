@@ -48,28 +48,40 @@ impl Application for Store {
         (Self { state }, Command::none())
     }
 
-    fn title(&self) -> String { "Novau Store".into() }
+    fn title(&self) -> String {
+        "Novau Store".into()
+    }
 
     fn update(&mut self, msg: Message) -> Command<Message> {
         match msg {
-            Message::QueryChanged(q) => { self.state.query = q; Command::none() }
+            Message::QueryChanged(q) => {
+                self.state.query = q;
+                Command::none()
+            }
             Message::Search => {
                 let b = Arc::clone(&self.state.backend);
                 let q = self.state.query.clone();
-                Command::perform(async move {
-                    b.search(&q).await.unwrap_or_default()
-                }, Message::SearchResult)
+                Command::perform(
+                    async move { b.search(&q).await.unwrap_or_default() },
+                    Message::SearchResult,
+                )
             }
-            Message::SearchResult(r) => { self.state.results = r; Command::none() }
+            Message::SearchResult(r) => {
+                self.state.results = r;
+                Command::none()
+            }
             Message::Install(pkg) => {
                 let id = pkg.id.clone();
                 self.state.installing = Some(id.clone());
                 self.state.status = Some(format!("Installing {id}…"));
                 let b = Arc::clone(&self.state.backend);
-                Command::perform(async move {
-                    let r = b.install(&pkg).await.map_err(|e| e.to_string());
-                    (id.clone(), r)
-                }, |(id, r)| Message::InstallResult(id, r))
+                Command::perform(
+                    async move {
+                        let r = b.install(&pkg).await.map_err(|e| e.to_string());
+                        (id.clone(), r)
+                    },
+                    |(id, r)| Message::InstallResult(id, r),
+                )
             }
             Message::InstallResult(id, res) => {
                 self.state.installing = None;
@@ -83,8 +95,7 @@ impl Application for Store {
     }
 
     fn view(&self) -> Element<Message> {
-        let input = text_input("Search applications, games, tools…",
-            &self.state.query)
+        let input = text_input("Search applications, games, tools…", &self.state.query)
             .on_input(Message::QueryChanged)
             .on_submit(Message::Search)
             .size(18)
@@ -100,7 +111,9 @@ impl Application for Store {
             };
             let r = row![
                 text(format!("{}  {}", kind_badge, pkg.name)).size(16),
-                text(pkg.summary.clone()).size(12).style(iced::theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
+                text(pkg.summary.clone())
+                    .size(12)
+                    .style(iced::theme::Text::Color(Color::from_rgb(0.6, 0.6, 0.6))),
                 button("Install").on_press(Message::Install(pkg.clone())),
             ]
             .spacing(12)

@@ -28,7 +28,13 @@ pub struct WelcomeState {
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Page { #[default] Welcome, Language, Timezone, Done }
+pub enum Page {
+    #[default]
+    Welcome,
+    Language,
+    Timezone,
+    Done,
+}
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -51,7 +57,9 @@ impl Application for Welcome {
         (Self { state }, Command::none())
     }
 
-    fn title(&self) -> String { format!("{} — Welcome", novau_common::DISTRO_NAME) }
+    fn title(&self) -> String {
+        format!("{} — Welcome", novau_common::DISTRO_NAME)
+    }
 
     fn update(&mut self, msg: Message) -> Command<Message> {
         match msg {
@@ -68,8 +76,14 @@ impl Application for Welcome {
                 let _ = std::process::Command::new("novau-installer").spawn();
                 Command::none()
             }
-            Message::SetLanguage(s) => { self.state.language = s; Command::none() }
-            Message::SetTimezone(s) => { self.state.timezone = s; Command::none() }
+            Message::SetLanguage(s) => {
+                self.state.language = s;
+                Command::none()
+            }
+            Message::SetTimezone(s) => {
+                self.state.timezone = s;
+                Command::none()
+            }
             Message::Quit => std::process::exit(0),
         }
     }
@@ -80,38 +94,57 @@ impl Application for Welcome {
                 let mut c = column![
                     text("Welcome to NovauOS").size(36),
                     text("Lightweight. Modern. Built on Rust.").size(18),
-                ].spacing(12).align_items(Alignment::Center);
+                ]
+                .spacing(12)
+                .align_items(Alignment::Center);
                 if self.state.live_mode {
                     c = c.push(
                         button(text("Install NovauOS").size(18))
                             .on_press(Message::Install)
                             .padding(12)
-                            .width(Length::Fixed(220.0))
+                            .width(Length::Fixed(220.0)),
                     );
                 }
                 c.into()
             }
             Page::Language => column![
                 text("Choose your language").size(24),
-                text_input("Language", &self.state.language).on_input(Message::SetLanguage).size(18),
-            ].spacing(12).into(),
+                text_input("Language", &self.state.language)
+                    .on_input(Message::SetLanguage)
+                    .size(18),
+            ]
+            .spacing(12)
+            .into(),
             Page::Timezone => column![
                 text("Select your timezone").size(24),
-                text_input("Timezone", &self.state.timezone).on_input(Message::SetTimezone).size(18),
-            ].spacing(12).into(),
+                text_input("Timezone", &self.state.timezone)
+                    .on_input(Message::SetTimezone)
+                    .size(18),
+            ]
+            .spacing(12)
+            .into(),
             Page::Done => column![
                 text("You're all set!").size(32),
                 text("Click Finish to start using NovauOS.").size(16),
                 button("Finish").on_press(Message::Quit).padding(10),
-            ].spacing(12).align_items(Alignment::Center).into(),
+            ]
+            .spacing(12)
+            .align_items(Alignment::Center)
+            .into(),
         };
 
         let mut nav = row![];
         if self.state.page != Page::Done {
-            nav = nav.push(button("Next").on_press(Message::Next).width(Length::Fixed(140.0)));
+            nav = nav.push(
+                button("Next")
+                    .on_press(Message::Next)
+                    .width(Length::Fixed(140.0)),
+            );
         }
 
-        let c = column![body, nav].spacing(24).align_items(Alignment::Center);
+        let c = column![body, nav]
+            .spacing(24)
+            .align_items(Alignment::Center);
         container(c)
             .width(Length::Fill)
             .height(Length::Fill)

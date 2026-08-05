@@ -64,14 +64,21 @@ impl Application for Launcher {
         (Self { state }, Command::none())
     }
 
-    fn title(&self) -> String { "Novau Launcher".into() }
+    fn title(&self) -> String {
+        "Novau Launcher".into()
+    }
 
     fn update(&mut self, msg: Message) -> Command<Message> {
         match msg {
-            Message::QueryChanged(q) => { self.state.query = q; self.state.selected = 0; }
+            Message::QueryChanged(q) => {
+                self.state.query = q;
+                self.state.selected = 0;
+            }
             Message::MoveSelection(d) => {
                 let n = self.filtered().len();
-                if n == 0 { return Command::none(); }
+                if n == 0 {
+                    return Command::none();
+                }
                 let i = (self.state.selected as i32 + d).rem_euclid(n as i32) as usize;
                 self.state.selected = i;
             }
@@ -110,9 +117,7 @@ impl Application for Launcher {
             col = col.push(b);
         }
 
-        let c = container(col)
-            .padding(20)
-            .width(Length::Fixed(600.0));
+        let c = container(col).padding(20).width(Length::Fixed(600.0));
 
         container(c)
             .width(Length::Fill)
@@ -130,7 +135,9 @@ impl Launcher {
             return self.state.apps.iter().take(10).cloned().collect();
         }
         // Simple substring + initialism match. Good enough for v0.1.
-        self.state.apps.iter()
+        self.state
+            .apps
+            .iter()
             .filter(|a| {
                 let name = a.name.to_lowercase();
                 let gen = a.generic_name.as_deref().unwrap_or("").to_lowercase();
@@ -145,9 +152,9 @@ impl Launcher {
 fn is_initialism(query: &str, target: &str) -> bool {
     // "nvim" matches "Neovim" by taking first letters of each word.
     let words: Vec<&str> = target.split_whitespace().collect();
-    if words.is_empty() { return false; }
-    let init: String = words.iter()
-        .filter_map(|w| w.chars().next())
-        .collect();
+    if words.is_empty() {
+        return false;
+    }
+    let init: String = words.iter().filter_map(|w| w.chars().next()).collect();
     init.to_lowercase().starts_with(query)
 }

@@ -27,9 +27,11 @@ use iced::{Application, Settings};
 
 fn main() -> Result<()> {
     novau_common::init_logging("greeter");
-    log::info!("starting {} greeter v{}",
+    log::info!(
+        "starting {} greeter v{}",
         novau_common::DISTRO_NAME,
-        novau_common::DISTRO_VERSION);
+        novau_common::DISTRO_VERSION
+    );
 
     // Refuse to run as non-root — we need root to call pam_open_session
     // and switch VTs. In production this runs as a dedicated `novau-greeter`

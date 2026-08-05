@@ -72,7 +72,7 @@ pub struct StoreEntry {
     pub id: String,
     pub name: String,
     pub summary: String,
-    pub kind: String,        // "apt" | "flatpak" | "wine" | "appimage"
+    pub kind: String, // "apt" | "flatpak" | "wine" | "appimage"
     pub icon: String,
     pub rating: f32,
     pub installed: bool,
@@ -88,11 +88,19 @@ pub struct StoreEntry {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum IpcMessage {
     LauncherToggle,
-    LauncherQuery { query: String },
-    PanelNotification { app: String, summary: String, body: String },
+    LauncherQuery {
+        query: String,
+    },
+    PanelNotification {
+        app: String,
+        summary: String,
+        body: String,
+    },
     SessionLocked,
     SessionUnlocked,
-    UserSwitch { user: String },
+    UserSwitch {
+        user: String,
+    },
     Quit,
 }
 
