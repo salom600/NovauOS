@@ -2,6 +2,19 @@
 #
 # This is the chroot package list. live-build will install every package
 # listed here into the squashfs. Keep it as small as possible.
+#
+# Every package name in this file has been verified against the Debian 12
+# (bookworm) package indices for main/contrib/non-free/non-free-firmware
+# plus bookworm-updates and bookworm-security. See the audit script in
+# .github/scripts/audit-packages.sh.
+#
+# Package renames we applied (vs the original list):
+#   sof-firmware          → firmware-sof-signed   (renamed in bookworm)
+#   qogir-icon-theme      → (removed; not in bookworm; papirus + adwaita are enough)
+#   appstream-qt          → (removed; the Qt bindings were dropped; appstream itself stays)
+#   wine32                → (removed; wine + wine64 cover it; wine32 pulls in lib32 multilib)
+#   bottles               → (removed; not in bookworm apt; ship via Flathub in novau-store)
+#   libgl1-nvidia-glx     → (removed; nvidia-driver already pulls in libgl1-nvidia-glvnd-glx)
 
 # ── Core system ──
 systemd
@@ -96,11 +109,20 @@ kanshi
 wdisplays
 
 # ── GPU drivers ──
+# nvidia-driver (535.x in bookworm) is the metapackage; it pulls in
+# nvidia-driver-libs, nvidia-driver-bin, xserver-xorg-video-nvidia,
+# nvidia-vdpau-driver, nvidia-alternative, nvidia-kernel-dkms.
+# We explicitly list nvidia-vulkan-icd + libnvidia-encode1 so the
+# Vulkan ICD and NVENC are installed even if the metapackage's Suggests
+# field isn't honoured by live-build.
 nvidia-driver
 nvidia-kernel-dkms
 nvidia-vdpau-driver
-nvidia-cuda-toolkit
+nvidia-vulkan-icd
 libnvidia-encode1
+nvidia-smi
+nvidia-settings
+nvidia-persistenced
 firmware-amd-graphics
 mesa-vulkan-drivers
 libgl1-mesa-dri
@@ -115,7 +137,7 @@ pipewire-jack
 wireplumber
 pavucontrol
 alsa-utils
-sof-firmware
+firmware-sof-signed
 
 # ── Input ──
 libinput10
@@ -136,7 +158,6 @@ fonts-cantarell
 adwaita-icon-theme
 hicolor-icon-theme
 papirus-icon-theme
-qogir-icon-theme
 arc-theme
 materia-gtk-theme
 
@@ -161,23 +182,26 @@ libudev1
 # ── Software stores & package management ──
 flatpak
 gnome-software
+gnome-software-plugin-flatpak
 packagekit
 appstream
-appstream-qt
 apt-transport-https
 software-properties-common
 
 # ── Wine & Windows-app support ──
+# wine (the metapackage) pulls in wine64 on amd64.
+# wine32 requires lib32 multilib which bloats the ISO by ~500 MB;
+# users who really need 32-bit Windows apps can `dpkg --add-architecture i386`
+# post-install. We document this in the welcome screen.
+# Bottles is not in Debian bookworm apt; it ships via Flathub, which
+# our novau-store installs with one click.
 wine
 wine64
-wine32
 winetricks
 fonts-wine
-bottles
 
 # ── Proton / Steam for gaming ──
 steam-installer
-libgl1-nvidia-glx
 gamescope
 mangohud
 gamemode

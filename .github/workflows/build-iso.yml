@@ -56,6 +56,12 @@ jobs:
           echo "Disk usage after:"
           df -h /
 
+      - name: Audit package list against Debian 12 bookworm
+        run: |
+          # Fail fast if any package in our list doesn't exist in bookworm.
+          # This avoids wasting 30+ minutes of lb build time on a missing package.
+          bash .github/scripts/audit-packages.sh
+
       - name: Download Rust binaries (if skip_rust_build)
         if: github.event.inputs.skip_rust_build == 'true'
         uses: dawidd6/action-download-artifact@v6
