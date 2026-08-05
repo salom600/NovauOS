@@ -1,0 +1,22 @@
+[package]
+name = "novau-installer"
+description = "System installer for NovauOS (Calamares alternative)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "novau-installer"
+path = "src/main.rs"
+
+[dependencies]
+iced.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+log.workspace = true
+anyhow.workspace = true
+novau-common.workspace = true
+novau-ipc.workspace = true

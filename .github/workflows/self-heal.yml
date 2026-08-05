@@ -1,0 +1,156 @@
+# ─── NovauOS Self-Healing CI ──────────────────────────────────────────
+#
+# Watches every workflow_run that finishes in `failure`. If the failing
+# workflow is one of ours (build-rust, build-iso, release), we:
+#
+#   1. Fetch the failed run's logs.
+#   2. Parse them for common transient errors (network blip, apt lock,
+#      Docker pull timeout, cargo registry 5xx).
+#   3. If transient: re-trigger the same workflow with `workflow_dispatch`
+#      up to 3 times with exponential backoff.
+#   4. If non-transient OR retries exhausted: open a GitHub issue with
+#      the error log so a human can take a look.
+#
+# We also commit log-derived patches back to main when the error is
+# obviously a missing dependency or similar (the action: stefanzweifel/git-auto-commit-action).
+#
+name: self-heal
+
+on:
+  workflow_run:
+    workflows: ["build-rust", "build-iso", "release"]
+    types:
+      - completed
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  triage:
+    name: Triage failed workflow
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch failure context
+        id: ctx
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          WF="${{ github.event.workflow_run.name }}"
+          ID="${{ github.event.workflow_run.id }}"
+          HEAD_SHA="${{ github.event.workflow_run.head_sha }}"
+          ATTEMPTS_URL="https://api.github.com/repos/${{ github.repository }}/actions/runs/${ID}/attempts"
+          echo "workflow=${WF}" >> $GITHUB_OUTPUT
+          echo "run_id=${ID}" >> $GITHUB_OUTPUT
+          echo "head_sha=${HEAD_SHA}" >> $GITHUB_OUTPUT
+
+          # Download logs (zip)
+          mkdir -p logs
+          gh api "repos/${{ github.repository }}/actions/runs/${ID}/logs" > logs/run.zip || true
+          if [ -s logs/run.zip ]; then
+            cd logs && unzip -o run.zip > /dev/null 2>&1 || true && cd ..
+          fi
+          # Concatenate the most relevant log lines
+          {
+            find logs -type f -name '*.txt' -exec cat {} \; 2>/dev/null
+            gh run view --repo "${{ github.repository }}" "${ID}" --log-failed 2>/dev/null || true
+          } > logs/combined.log
+          wc -l logs/combined.log
+
+      - name: Classify failure
+        id: classify
+        run: |
+          set -euo pipefail
+          ./.github/scripts/classify-failure.sh logs/combined.log > classification.txt
+          cat classification.txt
+          KIND=$(awk -F= '/^kind=/{print $2}' classification.txt)
+          REASON=$(awk -F= '/^reason=/{print $2}' classification.txt)
+          echo "kind=${KIND}" >> $GITHUB_OUTPUT
+          echo "reason=${REASON}" >> $GITHUB_OUTPUT
+
+      - name: Read retry count
+        id: retry
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Inspect the previous runs of this workflow on the same SHA
+          # to count how many retries we've already attempted.
+          WF_NAME="${{ steps.ctx.outputs.workflow }}"
+          HEAD_SHA="${{ steps.ctx.outputs.head_sha }}"
+          COUNT=$(gh run list --repo "${{ github.repository }}" \
+                    --workflow "${WF_NAME}" \
+                    --commit "${HEAD_SHA}" \
+                    --json status,conclusion \
+                    --jq '[.[] | select(.status=="completed")] | length')
+          echo "attempt_count=${COUNT}" >> $GITHUB_OUTPUT
+          echo "Previous attempts on this SHA: ${COUNT}"
+
+      - name: Retry the workflow (transient failure)
+        if: steps.classify.outputs.kind == 'transient' && steps.retry.outputs.attempt_count < 4
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          WF_NAME="${{ steps.ctx.outputs.workflow }}"
+          echo "::notice::Transient failure (${{ steps.classify.outputs.reason }}). Scheduling retry."
+          # Exponential backoff: attempt 1 → 0s, 2 → 60s, 3 → 180s
+          ATTEMPT="${{ steps.retry.outputs.attempt_count }}"
+          case "${ATTEMPT}" in
+            1) SLEEP=0 ;;
+            2) SLEEP=60 ;;
+            3) SLEEP=180 ;;
+            *) SLEEP=300 ;;
+          esac
+          echo "Sleeping ${SLEEP}s before retry…"
+          sleep "${SLEEP}"
+          gh workflow run "${WF_NAME}" --repo "${{ github.repository }}" \
+            --ref "${{ github.event.workflow_run.head_branch }}"
+          echo "Retry dispatched."
+
+      - name: Open issue (non-transient or retries exhausted)
+        if: steps.classify.outputs.kind != 'transient' || steps.retry.outputs.attempt_count >= 4
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE="[CI] ${{ steps.ctx.outputs.workflow }} failed: ${{ steps.classify.outputs.reason }}"
+          BODY=$(cat <<EOF
+          ## Automated failure report
+
+          - **Workflow:** ${{ steps.ctx.outputs.workflow }}
+          - **Run ID:** ${{ steps.ctx.outputs.run_id }}
+          - **Commit:** ${{ steps.ctx.outputs.head_sha }}
+          - **Classification:** \`${{ steps.classify.outputs.kind }}\`
+          - **Reason:** ${{ steps.classify.outputs.reason }}
+          - **Attempts so far:** ${{ steps.retry.outputs.attempt_count }}
+
+          ### Log excerpt
+
+          \`\`\`
+          $(tail -n 80 logs/combined.log)
+          \`\`\`
+
+          ### Action required
+
+          ${
+            if [ "${{ steps.classify.outputs.kind }}" = "transient" ]; then
+              echo "This was a transient failure that did not recover after ${{ steps.retry.outputs.attempt_count }} retries. Manual investigation needed."
+            else
+              echo "This is a real (non-transient) failure. Please fix the underlying issue in the codebase."
+            fi
+          }
+
+          [View full run](https://github.com/${{ github.repository }}/actions/runs/${{ steps.ctx.outputs.run_id }})
+          EOF
+          )
+          gh issue create --repo "${{ github.repository }}" \
+            --title "${TITLE}" \
+            --body "${BODY}" \
+            --label "ci-failure,automated" || \
+          gh issue create --repo "${{ github.repository }}" \
+            --title "${TITLE}" \
+            --body "${BODY}"

@@ -1,0 +1,66 @@
+#!/bin/sh
+# ─── binary hook: GRUB customization ──────────────────────────────────
+#
+# Runs after `lb binary` has assembled the EFI/BIOS tree. Customizes
+# the GRUB menu so users see a polished boot menu instead of the
+# default Debian one.
+#
+set -e
+
+echo "[novau] customizing GRUB…"
+
+# Live-build drops us into binary/ at this stage
+GRUB_PC_DIR=binary/boot/grub/pc
+GRUB_EFI_DIR=binary/boot/grub/efi
+
+# ── grub.cfg for the BIOS boot menu ──────────────────────────────────
+mkdir -p "${GRUB_PC_DIR}/grub"
+cat > "${GRUB_PC_DIR}/grub/grub.cfg" <<'EOF'
+set default=0
+set timeout=10
+set gfxmode=auto
+set locale_dir=$prefix/locale
+set lang=en_US
+insmod all_video
+insmod gfxterm
+insmod png
+insmod progress
+terminal_input console
+terminal_output gfxterm
+
+set color_normal=light-gray/black
+set menu_color_normal=light-gray/black
+set menu_color_highlight=green/black
+
+# Background
+background_image /boot/grub/novau-grub.png
+
+menuentry "NovauOS (Live)" --class novau --class os {
+    set gfxpayload=keep
+    linux /live/vmlinuz boot=live components quiet splash ---
+    initrd /live/initrd.img
+}
+
+menuentry "NovauOS (Safe graphics mode)" --class novau --class os {
+    set gfxpayload=keep
+    linux /live/vmlinuz boot=live components quiet splash nomodeset ---
+    initrd /live/initrd.img
+}
+
+menuentry "Install NovauOS" --class novau --class os {
+    set gfxpayload=keep
+    linux /live/vmlinuz boot=live components quiet splash novau-installer ---
+    initrd /live/initrd.img
+}
+
+menuentry "Memtest86+" {
+    linux16 /boot/memtest86+.bin
+}
+EOF
+
+# Splash image (if shipped)
+if [ -f /usr/share/backgrounds/novau/novau-grub.png ]; then
+    cp /usr/share/backgrounds/novau/novau-grub.png "${GRUB_PC_DIR}/grub/novau-grub.png" 2>/dev/null || true
+fi
+
+echo "[novau] GRUB customization done."

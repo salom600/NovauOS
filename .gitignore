@@ -1,0 +1,33 @@
+# ─── NovauOS .gitignore ───────────────────────────────────────────────
+
+# Rust
+target/
+**/*.rs.bk
+
+# live-build
+iso-build/.build/
+iso-build/chroot/
+iso-build/binary/
+iso-build/build.log
+iso-build/binaries/
+iso-build/*.iso
+iso-build/*.iso.xz
+iso-build/*.squashfs
+iso-build/*.packages
+iso-build/*.sha256sum
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets — never commit
+.env
+*.pem
+*.key
+secrets/

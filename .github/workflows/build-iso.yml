@@ -1,0 +1,145 @@
+# ─── NovauOS ISO build ────────────────────────────────────────────────
+#
+# Builds the full hybrid ISO inside a Docker container that mirrors the
+# Debian 12 build environment. Runs on push to main, daily at 02:00 UTC,
+# and on manual dispatch.
+#
+name: build-iso
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'rust-components/**'
+      - 'iso-build/**'
+      - '.github/workflows/build-iso.yml'
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version string (e.g. 0.1.0)'
+        required: false
+        default: '0.1.0'
+      skip_rust_build:
+        description: 'Skip rebuilding Rust components (use latest artifact)'
+        type: boolean
+        required: false
+        default: false
+
+env:
+  NOVAU_VERSION: ${{ github.event.inputs.version || '0.1.0' }}
+
+jobs:
+  build:
+    name: Build ISO (amd64)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 180
+    permissions:
+      contents: write     # for uploading to Releases
+      packages: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Free up disk space
+        run: |
+          echo "Disk usage before:"
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+                     /usr/local/.ghcup /usr/local/share/boost /usr/lib/jvm || true
+          sudo apt-get clean
+          docker rmi $(docker images -q) -f || true
+          echo "Disk usage after:"
+          df -h /
+
+      - name: Download Rust binaries (if skip_rust_build)
+        if: github.event.inputs.skip_rust_build == 'true'
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow: build-rust.yml
+          workflow_conclusion: success
+          name: novau-rust-x86_64
+          path: rust-binaries
+          if_no_artifact_found: fail
+
+      - name: Build the builder Docker image
+        working-directory: iso-build
+        run: |
+          docker build -t novauos-builder:${{ github.sha }} .
+
+      - name: Run the ISO build
+        working-directory: iso-build
+        run: |
+          docker run --rm --privileged \
+            -v "$PWD:/build" \
+            -v "/var/run/docker.sock:/var/run/docker.sock" \
+            -e NOVAU_VERSION="${{ env.NOVAU_VERSION }}" \
+            -e GITHUB_SHA="${{ github.sha }}" \
+            novauos-builder:${{ github.sha }} /build/build.sh
+
+      - name: Verify ISO
+        id: verify
+        run: |
+          ISO=$(ls iso-build/novauos-*.iso 2>/dev/null | head -1)
+          if [ -z "${ISO}" ]; then
+            echo "::error::No ISO produced"
+            exit 1
+          fi
+          echo "iso_path=${ISO}" >> $GITHUB_OUTPUT
+          ls -lh "${ISO}"
+          sha256sum "${ISO}"
+
+      - name: Compress ISO
+        run: |
+          xz -T0 -9 "${{ steps.verify.outputs.iso_path }}"
+          ls -lh iso-build/*.iso.xz
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: novauos-${{ env.NOVAU_VERSION }}-amd64-iso
+          path: |
+            iso-build/*.iso.xz
+            iso-build/*.sha256sum
+            iso-build/build.log
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Update "nightly" release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          name: NovauOS Nightly (${{ github.sha }})
+          body: |
+            Automated nightly build of NovauOS.
+
+            - **Commit:** ${{ github.sha }}
+            - **Built:** ${{ github.run_id }}
+            - **Version:** ${{ env.NOVAU_VERSION }}
+
+            Download the `.iso.xz`, decompress with `xz -d`, then `dd` to a USB stick:
+            ```
+            xz -d novauos-*.iso.xz
+            sudo dd if=novauos-*.iso of=/dev/sdX bs=4M conv=fsync status=progress
+            ```
+          files: |
+            iso-build/*.iso.xz
+            iso-build/*.sha256sum
+          prerelease: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Job summary
+        run: |
+          echo "## NovauOS ISO Build" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Version: \`${{ env.NOVAU_VERSION }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Architecture: \`amd64\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Artifact" >> $GITHUB_STEP_SUMMARY
+          echo "ISO + sha256sum uploaded as workflow artifact \`novauos-${{ env.NOVAU_VERSION }}-amd64-iso\`" >> $GITHUB_STEP_SUMMARY

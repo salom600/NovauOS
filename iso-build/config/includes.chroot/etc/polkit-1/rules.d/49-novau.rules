@@ -1,0 +1,18 @@
+# Default Polkit rule: allow active users in the `sudo` group to install
+# packages via PackageKit / apt without a password prompt.
+
+polkit.addRule(function(action, subject) {
+    if ((action.id == "org.freedesktop.packagekit.package-install" ||
+         action.id == "org.freedesktop.packagekit.package-remove" ||
+         action.id == "org.debian.apt.install-or-remove-packages") &&
+        subject.isInGroup("sudo")) {
+        return polkit.Result.YES;
+    }
+});
+
+polkit.addRule(function(action, subject) {
+    if (action.id.indexOf("org.freedesktop.NetworkManager.") == 0 &&
+        subject.isInGroup("sudo")) {
+        return polkit.Result.YES;
+    }
+});

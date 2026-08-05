@@ -1,0 +1,228 @@
+# ─── NovauOS base package list ──────────────────────────────────────────
+#
+# This is the chroot package list. live-build will install every package
+# listed here into the squashfs. Keep it as small as possible.
+
+# ── Core system ──
+systemd
+systemd-sysv
+dbus
+udev
+policykit-1
+polkitd
+sudo
+apt
+apt-utils
+bash
+bash-completion
+coreutils
+util-linux
+mount
+procps
+psmisc
+iproute2
+iputils-ping
+net-tools
+wireless-tools
+wpasupplicant
+network-manager
+openssh-client
+ca-certificates
+gnupg
+cron
+rsyslog
+logrotate
+
+# ── Linux kernel & firmware ──
+linux-image-amd64
+linux-headers-amd64
+firmware-linux
+firmware-linux-nonfree
+firmware-misc-nonfree
+intel-microcode
+amd64-microcode
+firmware-iwlwifi
+firmware-realtek
+firmware-atheros
+firmware-brcm80211
+
+# ── Initramfs & boot ──
+initramfs-tools
+live-boot
+live-config
+live-config-systemd
+grub-pc-bin
+grub-efi-amd64-bin
+efibootmgr
+plymouth
+plymouth-themes
+
+# ── Filesystem & storage ──
+btrfs-progs
+e2fsprogs
+dosfstools
+ntfs-3g
+exfatprogs
+f2fs-tools
+xfsprogs
+udisks2
+parted
+gparted
+
+# ── Graphics stack ──
+mesa-va-drivers
+mesa-vulkan-drivers
+vulkan-tools
+libgl1-mesa-dri
+libglx-mesa0
+xserver-xorg-core
+xwayland
+wayland-protocols
+libwayland-client0
+libwayland-server0
+libwayland-cursor0
+libwayland-egl1
+libxkbcommon0
+libxkbcommon-dev
+weston
+sway
+swaybg
+swayidle
+swaylock
+wl-clipboard
+mako-notifier
+fuzzel
+kanshi
+wdisplays
+
+# ── GPU drivers ──
+nvidia-driver
+nvidia-kernel-dkms
+nvidia-vdpau-driver
+nvidia-cuda-toolkit
+libnvidia-encode1
+firmware-amd-graphics
+mesa-vulkan-drivers
+libgl1-mesa-dri
+vulkan-tools
+
+# ── Audio ──
+pipewire
+pipewire-alsa
+pipewire-pulse
+pipewire-audio
+pipewire-jack
+wireplumber
+pavucontrol
+alsa-utils
+sof-firmware
+
+# ── Input ──
+libinput10
+xserver-xorg-input-libinput
+libinput-tools
+
+# ── Fonts ──
+fonts-noto-core
+fonts-noto-ui-core
+fonts-noto-cjk
+fonts-noto-color-emoji
+fonts-hack-ttf
+fonts-firacode
+fonts-inter
+fonts-cantarell
+
+# ── Themes & icons ──
+adwaita-icon-theme
+hicolor-icon-theme
+papirus-icon-theme
+qogir-icon-theme
+arc-theme
+materia-gtk-theme
+
+# ── PAM & auth ──
+libpam0g
+libpam0g-dev
+libpam-modules
+libpam-modules-bin
+libpam-runtime
+libpam-systemd
+accountsservice
+
+# ── Rust runtime deps (already shipped via static binaries) ──
+libssl3
+libssl-dev
+libdbus-1-3
+libsqlite3-0
+libpulse0
+libgtk-3-0
+libudev1
+
+# ── Software stores & package management ──
+flatpak
+gnome-software
+packagekit
+appstream
+appstream-qt
+apt-transport-https
+software-properties-common
+
+# ── Wine & Windows-app support ──
+wine
+wine64
+wine32
+winetricks
+fonts-wine
+bottles
+
+# ── Proton / Steam for gaming ──
+steam-installer
+libgl1-nvidia-glx
+gamescope
+mangohud
+gamemode
+
+# ── Browser ──
+firefox-esr
+firefox-esr-l10n-all
+
+# ── Productivity ──
+file-roller
+nautilus
+gedit
+gnome-terminal
+gnome-system-monitor
+gnome-screenshot
+gnome-bluetooth
+bluez
+bluez-tools
+
+# ── Multimedia codecs ──
+gstreamer1.0-plugins-base
+gstreamer1.0-plugins-good
+gstreamer1.0-plugins-bad
+gstreamer1.0-plugins-ugly
+gstreamer1.0-libav
+gstreamer1.0-vaapi
+ffmpeg
+libavcodec-extra
+
+# ── Development tools (for power users) ──
+git
+curl
+wget
+vim
+nano
+htop
+btop
+ncdu
+ripgrep
+fd-find
+fzf
+bat
+exa
+tmux
+strace
+ltrace
+build-essential
+pkg-config

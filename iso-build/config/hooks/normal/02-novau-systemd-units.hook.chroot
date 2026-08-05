@@ -1,0 +1,120 @@
+#!/bin/sh
+# ─── chroot hook: install systemd unit files for NovauOS components ───
+#
+# These service files are installed into /usr/lib/systemd/system during
+# the chroot phase. They reference the Rust binaries that the host's
+# build.sh has already copied into includes.chroot/usr/bin/.
+#
+set -e
+
+echo "[novau] installing systemd unit files…"
+
+mkdir -p /usr/lib/systemd/system
+
+# ── Greeter ──────────────────────────────────────────────────────────
+cat > /usr/lib/systemd/system/novau-greeter.service <<'EOF'
+[Unit]
+Description=NovauOS Greeter (Wayland login screen)
+Documentation=https://github.com/salom600/NovauOS
+After=systemd-user-sessions.service plymouth-quit.service network.target
+Wants=plymouth-quit.service
+Conflicts=getty@tty1.service
+After=getty@tty1.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/novau-greeter
+Restart=always
+RestartSec=2
+StandardInput=tty
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+KillMode=mixed
+IgnoreSIGPIPE=no
+SendSIGHUP=yes
+User=root
+Environment=XDG_SESSION_TYPE=wayland
+Environment=XDG_RUNTIME_DIR=/run/novau-greeter
+Environment=RUST_LOG=info
+RuntimeDirectory=novau-greeter
+RuntimeDirectoryMode=0755
+PAMName=login
+
+[Install]
+Alias=display-manager.service
+WantedBy=graphical.target
+EOF
+
+# ── Per-user panel (started via systemd --user) ──────────────────────
+mkdir -p /usr/lib/systemd/user
+cat > /usr/lib/systemd/user/novau-panel.service <<'EOF'
+[Unit]
+Description=NovauOS Panel
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/novau-panel
+Restart=on-failure
+RestartSec=3
+Environment=RUST_LOG=info
+
+[Install]
+WantedBy=graphical-session.target
+EOF
+
+cat > /usr/lib/systemd/user/novau-settings-daemon.service <<'EOF'
+[Unit]
+Description=NovauOS Settings Daemon
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/novau-settings
+Restart=on-failure
+Environment=RUST_LOG=info
+
+[Install]
+WantedBy=graphical-session.target
+EOF
+
+# ── Welcome (first-boot only; masked after onboarding completes) ─────
+cat > /usr/lib/systemd/user/novau-welcome.service <<'EOF'
+[Unit]
+Description=NovauOS Welcome
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/novau-welcome
+Environment=RUST_LOG=info
+ConditionPathExists=!%E/novau/onboarding-complete
+
+[Install]
+WantedBy=graphical-session.target
+EOF
+
+# ── Novau session target ────────────────────────────────────────────
+cat > /usr/lib/systemd/user/novau-session.target <<'EOF'
+[Unit]
+Description=NovauOS Session
+Wants=graphical-session.target
+After=graphical-session.target
+Requires=novau-panel.service novau-settings-daemon.service
+EOF
+
+# ── Wayland session desktop file ────────────────────────────────────
+mkdir -p /usr/share/wayland-sessions
+cat > /usr/share/wayland-sessions/novau.desktop <<'EOF'
+[Desktop Entry]
+Name=NovauOS
+Comment=The NovauOS Rust desktop session
+Exec=systemctl --user start novau-session.target && sway -c /etc/novau/sway.conf
+Type=Application
+DesktopNames=Novau
+EOF
+
+echo "[novau] systemd units installed."

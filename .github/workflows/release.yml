@@ -1,0 +1,110 @@
+# ─── NovauOS release pipeline ─────────────────────────────────────────
+#
+# Triggered by a `v*` tag. Builds & publishes a signed release ISO.
+#
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v0.1.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    name: Build release ISO
+    runs-on: ubuntu-22.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version from tag
+        id: ver
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          [ "${TAG}" = "refs/tags/" ] && TAG="${{ github.event.inputs.tag }}"
+          VERSION="${TAG#v}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Publishing release ${TAG} (version ${VERSION})"
+
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+                     /usr/local/.ghcup /usr/local/share/boost /usr/lib/jvm || true
+          sudo apt-get clean
+          df -h /
+
+      - name: Set up buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build builder image
+        working-directory: iso-build
+        run: docker build -t novauos-builder:release .
+
+      - name: Build ISO
+        working-directory: iso-build
+        run: |
+          docker run --rm --privileged \
+            -v "$PWD:/build" \
+            -e NOVAU_VERSION="${{ steps.ver.outputs.version }}" \
+            novauos-builder:release /build/build.sh
+
+      - name: Verify and package ISO
+        id: pkg
+        run: |
+          ISO=$(ls iso-build/novauos-*.iso | head -1)
+          [ -f "${ISO}" ] || { echo "::error::No ISO"; exit 1; }
+          BASENAME=$(basename "${ISO}" .iso)
+          sha256sum "${ISO}" > "iso-build/${BASENAME}.sha256sum"
+          echo "iso=${ISO}" >> $GITHUB_OUTPUT
+          echo "basename=${BASENAME}" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: NovauOS ${{ steps.ver.outputs.tag }}
+          body: |
+            # NovauOS ${{ steps.ver.outputs.tag }}
+
+            ## Installation
+
+            1. Download `novauos-${{ steps.ver.outputs.version }}-amd64.hybrid.iso` and the matching `.sha256sum`.
+            2. Verify the checksum:
+               ```
+               sha256sum -c novauos-*.sha256sum
+               ```
+            3. Flash to a USB stick (≥4 GB):
+               ```
+               sudo dd if=novauos-${{ steps.ver.outputs.version }}-amd64.hybrid.iso \
+                       of=/dev/sdX bs=4M conv=fsync status=progress
+               ```
+            4. Boot from the USB and choose **Install NovauOS**.
+
+            ## Highlights
+            - Debian 12 (bookworm) base
+            - Rust-native desktop (greeter, panel, launcher, store, installer, settings, welcome)
+            - Wayland-only (Sway default, cosmic-comp optional)
+            - Full NVIDIA / AMD / Intel driver support
+            - One-click Windows app support via Bottles + Wine
+
+            ## Known issues
+            - First boot ISO; expect rough edges.
+            - NVIDIA Wayland support requires driver ≥ 555.
+
+            ---
+            *Built from commit ${{ github.sha }}*
+          files: |
+            ${{ steps.pkg.outputs.iso }}
+            iso-build/${{ steps.pkg.outputs.basename }}.sha256sum
+          draft: false
+          prerelease: ${{ contains(steps.ver.outputs.tag, '-') }}
+          token: ${{ secrets.GITHUB_TOKEN }}

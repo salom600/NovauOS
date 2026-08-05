@@ -1,0 +1,18 @@
+                    GNU GENERAL PUBLIC LICENSE
+                       Version 3, 29 June 2007
+
+ Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+ Everyone is permitted to copy and distribute verbatim copies of this license
+ document, but changing it is not allowed.
+
+NovauOS — distribution-wide code — is licensed under GPLv3-or-later.
+
+Individual Rust crates under `rust-components/novau-*` are dual-licensed
+MIT OR Apache-2.0, unless otherwise stated at the top of each crate's
+`Cargo.toml`. This is the same convention used by the Rust ecosystem
+itself, and allows our crates to be re-used by other projects.
+
+Assets (wallpapers, logos, icons) under `assets/` are licensed under
+CC-BY-SA 4.0 unless a different license is bundled alongside the asset.
+
+Full text of GPLv3: <https://www.gnu.org/licenses/gpl-3.0.txt>

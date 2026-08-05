@@ -1,0 +1,19 @@
+# See https://help.github.com/articles/about-codeowners/
+
+# Default owner
+*                        @salom600
+
+# Rust components — owned by the architecture team
+/rust-components/novau-greeter/      @salom600
+/rust-components/novau-panel/         @salom600
+/rust-components/novau-launcher/      @salom600
+/rust-components/novau-store/         @salom600
+/rust-components/novau-installer/     @salom600
+/rust-components/novau-settings/      @salom600
+/rust-components/novau-welcome/       @salom600
+
+# ISO build
+/iso-build/                           @salom600
+
+# CI/CD
+/.github/                             @salom600

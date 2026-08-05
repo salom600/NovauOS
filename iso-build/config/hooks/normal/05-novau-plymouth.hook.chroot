@@ -1,0 +1,52 @@
+#!/bin/sh
+# ─── chroot hook: Plymouth theme ──────────────────────────────────────
+#
+# Installs a simple Plymouth theme that shows the NovauOS logo during
+# boot. The theme itself is just a placeholder script; the real artwork
+# ships under /usr/share/plymouth/themes/novau/.
+#
+set -e
+
+echo "[novau] installing Plymouth theme…"
+
+THEME_DIR=/usr/share/plymouth/themes/novau
+mkdir -p "${THEME_DIR}"
+
+cat > "${THEME_DIR}/novau.plymouth" <<'EOF'
+[Plymouth Theme]
+Name=NovauOS
+Description=NovauOS boot splash
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/novau
+ScriptFile=/usr/share/plymouth/themes/novau/novau.script
+EOF
+
+cat > "${THEME_DIR}/novau.script" <<'EOF'
+# NovauOS Plymouth script — minimal fade-in of the logo
+screen_width = Window.GetWidth();
+screen_height = Window.GetHeight();
+logo_image = Image("logo.png");
+sprite = Sprite(logo_image);
+sprite.SetX(screen_width / 2 - logo_image.GetWidth() / 2);
+sprite.SetY(screen_height / 2 - logo_image.GetHeight() / 2);
+sprite.SetOpacity(0.0);
+
+fun refresh_callback() {
+    time = Plymouth.GetTime();
+    opacity = Math.Min(time / 2.0, 1.0);
+    sprite.SetOpacity(opacity);
+}
+Plymouth.SetRefreshFunction(refresh_callback);
+EOF
+
+# Copy logo if present in the staging dir
+if [ -f /usr/share/icons/hicolor/256x256/apps/novauos.png ]; then
+    cp /usr/share/icons/hicolor/256x256/apps/novauos.png "${THEME_DIR}/logo.png"
+fi
+
+# Select the theme
+plymouth-set-default-theme -R novau 2>/dev/null || true
+
+echo "[novau] Plymouth theme installed."

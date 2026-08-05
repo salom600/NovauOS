@@ -1,0 +1,20 @@
+[package]
+name = "novau-welcome"
+description = "First-boot welcome & onboarding app for NovauOS"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "novau-welcome"
+path = "src/main.rs"
+
+[dependencies]
+iced.workspace = true
+tokio.workspace = true
+serde.workspace = true
+log.workspace = true
+anyhow.workspace = true
+novau-common.workspace = true

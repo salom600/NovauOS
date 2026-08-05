@@ -1,0 +1,38 @@
+[package]
+name = "novau-greeter"
+description = "Wayland-native greeter (login screen) for NovauOS, written in Rust"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "novau-greeter"
+path = "src/main.rs"
+
+[dependencies]
+iced.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+log.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+once_cell.workspace = true
+parking_lot.workspace = true
+novau-common.workspace = true
+novau-ipc.workspace = true
+
+# PAM: we link directly against libpam via our own minimal FFI (see `auth.rs`).
+# This avoids the heavyweight `bindgen`+`libclang` toolchain the `pam` crate
+# pulls in, keeping the build hermetic.
+nix = { version = "0.27", features = ["user"] }
+libc = "0.2"
+
+[dev-dependencies]
+tempfile = "3"
+
+# Link the system PAM library.
+[build-dependencies]
+pkg-config = "0.3"

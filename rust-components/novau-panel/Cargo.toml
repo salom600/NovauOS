@@ -1,0 +1,25 @@
+[package]
+name = "novau-panel"
+description = "Top panel for NovauOS — clock, tray, notifications, window list"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "novau-panel"
+path = "src/main.rs"
+
+[dependencies]
+iced.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+log.workspace = true
+anyhow.workspace = true
+parking_lot.workspace = true
+zbus.workspace = true
+novau-common.workspace = true
+novau-ipc.workspace = true
+chrono = "0.4"

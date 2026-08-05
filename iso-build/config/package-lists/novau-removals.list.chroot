@@ -1,0 +1,32 @@
+# ─── Removed packages: things the Debian base installs but NovauOS doesn't want ──
+#
+# live-build's `--packages-remove` is honoured by listing `-pkgname` here.
+
+-gdm3
+-sddm
+-lightdm
+-slim
+-gnome-shell
+-gnome-session
+-gnome-control-center
+-mutter
+-kde-plasma-desktop
+-plasma-workspace
+-kwin-x11
+-xfce4
+-xfce4-session
+-xfwm4
+-lxde
+-lxqt
+-cinnamon
+-cinnamon-core
+-mate-desktop-environment
+-budgie-desktop
+-tasksel
+-tasksel-data
+-debian-installer-launcher
+-popularity-contest
+-factory
+-reportbug
+-debian-faq
+-doc-debian

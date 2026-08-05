@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 64" width="240" height="64">
+  <!-- NovauOS banner logo -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6ED6A3"/>
+      <stop offset="100%" stop-color="#3CAE7B"/>
+    </linearGradient>
+  </defs>
+  <!-- Hexagonal mark -->
+  <polygon points="20,4 36,12 36,32 20,40 4,32 4,12" fill="none" stroke="url(#g)" stroke-width="2.5"/>
+  <polygon points="20,14 28,18 28,26 20,30 12,26 12,18" fill="url(#g)"/>
+  <!-- Wordmark -->
+  <text x="48" y="32" font-family="Inter, Helvetica, sans-serif" font-size="22" font-weight="600" fill="#F0F4F0">
+    Novau<tspan fill="#6ED6A3">OS</tspan>
+  </text>
+  <text x="48" y="48" font-family="Inter, Helvetica, sans-serif" font-size="9" fill="#7C8A7C">
+    Rust from boot to desktop
+  </text>
+</svg>

@@ -1,0 +1,46 @@
+#!/bin/sh
+# ─── chroot hook: NVIDIA & GPU driver setup ───────────────────────────
+#
+# Configures:
+#   - nvidia-drm.modeset=1 by default (required for Wayland)
+#   - Kernel module loading for common GPUs
+#   - Vulkan ICD files
+#
+set -e
+
+echo "[novau] configuring GPU drivers…"
+
+# Force nvidia-drm.modeset=1 at boot via modprobe
+mkdir -p /etc/modprobe.d
+cat > /etc/modprobe.d/nvidia.conf <<'EOF'
+# Enable nvidia-drm KMS, required for Wayland on NVIDIA
+options nvidia-drm modeset=1
+options nvidia-drm fbdev=1
+# NVreg_PreserveVideoMemoryAllocations=1 fixes resume-from-suspend
+options nvidia NVreg_PreserveVideoMemoryAllocations=1
+EOF
+
+# Update initramfs to pick up the changes
+if command -v update-initramfs >/dev/null 2>&1; then
+    update-initramfs -u -k all || true
+fi
+
+# ── Vulkan ICDs ──────────────────────────────────────────────────────
+mkdir -p /etc/vulkan/icd.d
+cat > /etc/vulkan/icd.d/nvidia_icd.x86_64.json <<'EOF'
+{
+    "file_format_version": "1.0.0",
+    "ICD": {
+        "library_path": "libGLX_nvidia.so.0",
+        "api_version": "1.3"
+    }
+}
+EOF
+
+# ── Disable the nouveau driver if nvidia is loaded ───────────────────
+cat > /etc/modprobe.d/blacklist-nouveau.conf <<'EOF'
+blacklist nouveau
+options nouveau modeset=0
+EOF
+
+echo "[novau] GPU drivers configured."

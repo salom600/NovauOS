@@ -1,0 +1,23 @@
+# Rust
+target/
+**/*.rs.bk
+Cargo.lock.bak
+
+# live-build
+iso-build/.build/
+iso-build/chroot/
+iso-build/binary/
+iso-build/build.log
+iso-build/*.iso
+iso-build/*.squashfs
+iso-build/*.packages
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db

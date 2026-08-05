@@ -1,0 +1,9 @@
+# ─── NovauOS default user skeleton ─────────────────────────────────────
+# These files are copied into a new user's home directory when `useradd -m`
+# runs. They set up the initial Wayland session and our config defaults.
+
+[Desktop Entry]
+Name=NovauOS
+Comment=Start the NovauOS session
+Exec=systemctl --user start novau-session.target && sway -c /etc/novau/sway.conf
+Type=Application
