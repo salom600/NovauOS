@@ -97,21 +97,34 @@ jobs:
             exit 1
           fi
           echo "iso_path=${ISO}" >> $GITHUB_OUTPUT
+          echo "iso_name=$(basename "${ISO}")" >> $GITHUB_OUTPUT
           ls -lh "${ISO}"
           sha256sum "${ISO}"
 
       - name: Compress ISO
+        # Use gzip instead of xz because xz -9 needs ~1.5 GB of RAM and
+        # tries to chown the output file (which fails on GitHub Actions
+        # runners with 'Cannot set the file group: Operation not permitted').
+        # gzip is faster, uses less memory, and doesn't try to set file
+        # ownership. The resulting .gz is ~10% larger than .xz but downloads
+        # faster and decompresses faster on the user's machine.
         run: |
-          xz -T0 -9 "${{ steps.verify.outputs.iso_path }}"
-          ls -lh iso-build/*.iso.xz
+          gzip -9 "${{ steps.verify.outputs.iso_path }}"
+          ls -lh iso-build/*.iso.gz
+
+      - name: Generate sha256sum for compressed ISO
+        run: |
+          cd iso-build
+          sha256sum *.iso.gz > sha256sums.txt
+          cat sha256sums.txt
 
       - name: Upload ISO artifact
         uses: actions/upload-artifact@v4
         with:
           name: novauos-${{ env.NOVAU_VERSION }}-amd64-iso
           path: |
-            iso-build/*.iso.xz
-            iso-build/*.sha256sum
+            iso-build/*.iso.gz
+            iso-build/sha256sums.txt
             iso-build/build.log
           retention-days: 30
           if-no-files-found: error
@@ -129,14 +142,14 @@ jobs:
             - **Built:** ${{ github.run_id }}
             - **Version:** ${{ env.NOVAU_VERSION }}
 
-            Download the `.iso.xz`, decompress with `xz -d`, then `dd` to a USB stick:
+            Download the `.iso.gz`, decompress with `gunzip`, then `dd` to a USB stick:
             ```
-            xz -d novauos-*.iso.xz
+            gunzip novauos-*.iso.gz
             sudo dd if=novauos-*.iso of=/dev/sdX bs=4M conv=fsync status=progress
             ```
           files: |
-            iso-build/*.iso.xz
-            iso-build/*.sha256sum
+            iso-build/*.iso.gz
+            iso-build/sha256sums.txt
           prerelease: true
           token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
