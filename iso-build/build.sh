@@ -76,7 +76,7 @@ lb config \
     --iso-application "NovauOS ${VERSION}" \
     --image-name "novauos-${VERSION}-${ARCH}" \
     --memtest none \
-    --uefi-secure-boot disabled \
+    --uefi-secure-boot disable \
     --bootloaders grub-pc,grub-efi \
     --binary-image iso-hybrid \
     --chroot-filesystem squashfs \
