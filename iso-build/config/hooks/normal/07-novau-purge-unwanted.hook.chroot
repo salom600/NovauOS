@@ -1,0 +1,83 @@
+#!/bin/sh
+# ─── chroot hook: purge unwanted packages ─────────────────────────────
+#
+# Runs *inside* the chroot during `lb chroot`, after all packages from
+# our package-lists have been installed. Removes any display managers
+# and desktop environments that may have been pulled in as dependencies
+# of packages we DO want (e.g. `gnome-terminal` pulls in some GNOME
+# libraries; we don't want the full GNOME shell).
+#
+# We use `dpkg --purge` with `--ignore-depends` for the truly stubborn
+# cases; otherwise `apt-get purge` is enough.
+#
+# Note: live-build's package-lists files only support listing packages
+# to INSTALL, not to remove. The `-pkgname` syntax we previously tried
+# caused:
+#   E: Command line option 'g' [from -gdm3] is not understood
+# because apt interpreted `-g` as a flag. This hook is the correct
+# way to remove packages.
+#
+set -e
+
+echo "[novau] purging unwanted display managers & desktop environments…"
+
+# Packages we never want in the squashfs.
+PURGE_PACKAGES="
+    gdm3
+    sddm
+    lightdm
+    slim
+    gnome-shell
+    gnome-session
+    gnome-control-center
+    mutter
+    kde-plasma-desktop
+    plasma-workspace
+    kwin-x11
+    xfce4
+    xfce4-session
+    xfwm4
+    lxde
+    lxqt
+    cinnamon
+    cinnamon-core
+    mate-desktop-environment
+    budgie-desktop
+    tasksel
+    tasksel-data
+    debian-installer-launcher
+    popularity-contest
+    reportbug
+    debian-faq
+    doc-debian
+"
+
+# Filter to only those actually installed (avoids apt warnings).
+INSTALLED=""
+for pkg in ${PURGE_PACKAGES}; do
+    if dpkg -l "${pkg}" 2>/dev/null | grep -q "^ii"; then
+        INSTALLED="${INSTALLED} ${pkg}"
+    fi
+done
+
+if [ -z "${INSTALLED}" ]; then
+    echo "[novau] nothing to purge; base install is already clean."
+    exit 0
+fi
+
+echo "[novau] purging:${INSTALLED}"
+# Use --auto-remove to also drop dependencies that were only pulled in
+# by these packages. -y to avoid prompts. --purge to remove config files
+# too.
+DEBIAN_FRONTEND=noninteractive apt-get purge -y --auto-remove ${INSTALLED} || {
+    echo "[novau] WARNING: apt-get purge had non-zero exit; some packages may remain."
+    # Don't fail the whole build — better to ship a slightly heavier ISO
+    # than to abort 40 minutes into the build.
+    exit 0
+}
+
+# Clean up apt caches freed by the purge
+apt-get clean || true
+apt-get autoremove -y || true
+
+echo "[novau] purge complete."
