@@ -11,3 +11,9 @@ export QT_QPA_PLATFORMTHEME="gtk3"
 export MOZ_ENABLE_WAYLAND=1
 export SDL_VIDEODRIVER=wayland
 export _JAVA_AWT_WM_NONREPARENTING=1
+
+# Detect live mode: live-boot mounts the ISO at /run/live/medium (bookworm)
+# or /cdrom (older). Either presence means we're on the live ISO.
+if [ -d /run/live/medium ] || [ -d /cdrom ] || [ -e /run/live/medium/live/filesystem.squashfs ]; then
+    export NOVAU_LIVE=1
+fi

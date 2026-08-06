@@ -1,0 +1,16 @@
+[Desktop Entry]
+Type=Application
+Name=NovauOS Welcome
+Name[ar]=مرحبًا NovauOS
+Name[es]=Bienvenida de NovauOS
+Name[fr]=Bienvenue NovauOS
+Comment=Welcome to NovauOS — install, explore, or get help
+Comment[ar]=مرحبًا بك في NovauOS — قم بالتثبيت أو الاستكشاف أو الحصول على المساعدة
+Comment[es]=Bienvenido a NovauOS — instale, explore u obtenga ayuda
+Comment[fr]=Bienvenue dans NovauOS — installez, explorez ou obtenez de l'aide
+Icon=system-help
+Exec=/usr/bin/novau-welcome
+Terminal=false
+Categories=System;
+X-GNOME-Autostart-enabled=true
+OnlyShowIn=Novau;

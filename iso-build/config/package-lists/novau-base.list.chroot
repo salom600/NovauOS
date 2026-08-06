@@ -108,6 +108,20 @@ fuzzel
 kanshi
 wdisplays
 
+# ── Greeter kiosk compositor + desktop infrastructure ──
+# cage: kiosk Wayland compositor that wraps novau-greeter fullscreen.
+# Without this, the greeter panics with "neither WAYLAND_DISPLAY nor
+# WAYLAND_SOCKET nor DISPLAY is set" because iced/winit needs a running
+# compositor. cage IS the compositor for the greeter.
+# lxpolkit: lightweight polkit auth agent (needed for the store to
+# pop up password dialogs when installing packages).
+# xdg-desktop-portal-*: Flatpak file/dialog access.
+cage
+lxpolkit
+xdg-desktop-portal
+xdg-desktop-portal-wlr
+xdg-desktop-portal-gtk
+
 # ── GPU drivers ──
 # nvidia-driver (535.x in bookworm) is the metapackage; it pulls in
 # nvidia-driver-libs, nvidia-driver-bin, xserver-xorg-video-nvidia,
