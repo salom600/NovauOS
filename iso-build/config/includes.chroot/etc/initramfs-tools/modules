@@ -1,0 +1,26 @@
+# ─── NovauOS initramfs modules ────────────────────────────────────────
+#
+# These kernel modules are loaded EARLY during boot, before the root
+# filesystem is mounted. Without them, the kernel can't initialize the
+# display, and Wayland compositors (cage for the greeter, sway for the
+# session) can't start — resulting in a black screen or a hang at
+# "SMBus Host Controller not enabled!" (which is actually a harmless
+# i2c-piix4 warning; the REAL hang is the missing GPU driver).
+#
+# vmwgfx: VMware virtual GPU (critical for VMware/VirtualBox)
+# i915:   Intel integrated graphics
+# amdgpu: AMD graphics (both APU and discrete)
+# radeon: older AMD graphics
+# nouveau: NVIDIA open-source driver (fallback)
+# nvidia: NVIDIA proprietary driver (loaded via DKMS)
+# nvidia-drm: NVIDIA DRM (needed for Wayland)
+# nvidia-modeset: NVIDIA modesetting (needed for Wayland)
+#
+# The initramfs is rebuilt by the 04-novau-gpu-drivers.hook.chroot hook
+# which runs `update-initramfs -u -k all` after the NVIDIA driver is
+# configured.
+vmwgfx
+i915
+amdgpu
+radeon
+nouveau

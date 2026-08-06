@@ -80,7 +80,8 @@ lb config \
     --bootloaders grub-pc,grub-efi \
     --binary-image iso-hybrid \
     --chroot-filesystem squashfs \
-    --compression xz
+    --compression xz \
+    --bootappend-live "boot=live components quiet splash"
 
 log "lb config completed successfully."
 
