@@ -64,7 +64,7 @@ jobs:
 
       - name: Download Rust binaries (if skip_rust_build)
         if: github.event.inputs.skip_rust_build == 'true'
-        uses: dawidd6/action-download-artifact@v6
+        uses: dawidd6/action-download-artifact@v21
         with:
           workflow: build-rust.yml
           workflow_conclusion: success
